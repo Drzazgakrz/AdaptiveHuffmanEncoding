@@ -1,0 +1,9 @@
+package pl.krzysztof.drzazga;
+
+import pl.krzysztof.drzazga.view.Frame;
+
+public class Main {
+    public static void main(String[] args){
+       new Frame();
+    }
+}
