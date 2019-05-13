@@ -6,35 +6,30 @@ import pl.krzysztof.drzazga.view.TreePanel;
 
 import java.awt.*;
 import java.util.ArrayList;
-
+import java.util.Comparator;
 public class ManageDataService {
-    private ArrayList<Leaf> elements;
+    private ArrayList<Vertex> elements;
     private double entropy;
     private double average;
+    private Comparator<Vertex> comparator;
 
     public TreePanel getPanel() {
         return panel;
     }
 
-    public void setPanel(TreePanel panel) {
-        this.panel = panel;
-    }
-
     private TreePanel panel;
+
     public ManageDataService() {
         this.elements = new ArrayList<>();
         this.entropy = 0.0;
         this.average = 0.0;
         prepareLeafsList();
         this.panel = new TreePanel();
+        this.comparator = new VertexComparator();
     }
 
-    public ArrayList<Leaf> getElements() {
+    public ArrayList<Vertex> getElements() {
         return elements;
-    }
-
-    public void setElements(ArrayList<Leaf> elements) {
-        this.elements = elements;
     }
 
     public double getEntropy() {
@@ -53,7 +48,7 @@ public class ManageDataService {
         this.average = average;
     }
 
-    public void prepareLeafsList(){
+    public void prepareLeafsList() {
         this.elements = new ArrayList<>();
         Leaf nyt = new Leaf(null);
         nyt.setCount(0);
@@ -62,9 +57,9 @@ public class ManageDataService {
     }
 
 
-    public void addLetter(char key){
-        Leaf leaf = elements.stream().filter((current) ->
-                Character.toString(key).equals(current.getSign())
+    public void addLetter(char key) {
+        Leaf leaf = (Leaf) elements.stream().filter((current) ->
+                current instanceof Leaf && Character.toString(key).equals(((Leaf) current).getSign())
         ).findFirst().orElse(null);
         if (leaf == null) {
             leaf = new Leaf(Character.toString(key));
@@ -73,62 +68,99 @@ public class ManageDataService {
             addNewNode(leaf);
         } else {
             leaf.setCount(leaf.getCount() + 1);
-            updateTree(leaf.getUpperElement());
         }
+        updateTree(leaf);
     }
 
-    public void addNewNode(Leaf leaf) {
-        Vertex min = elements.stream().filter(current -> current.getCount() == 0).findFirst().get();
+    private void addNewNode(Leaf leaf) {
+        Vertex min = elements.stream().filter(current -> current instanceof Leaf && current.getCount()==0).findFirst().get();
         Vertex vertex = new Vertex();
         Vertex upper = min.getUpperElement();
-        if(upper!= null){
+        int level = 0;
+        if (upper != null) {
             upper.setLeftElement(vertex);
+            level = upper.getLevel() + 1;
         }
         vertex.setUpperElement(upper);
         vertex.setLeftElement(min);
         vertex.setRightElement(leaf);
-        vertex.setCount(1);
+        vertex.setLevel(level);
         leaf.setUpperElement(vertex);
+        leaf.setLevel(level + 1);
         min.setUpperElement(vertex);
-        updateTree(vertex.getUpperElement());
+        min.setLevel(level + 1);
+        elements.add(vertex);
     }
 
-    public void updateTree(Vertex vertex) {
-        if (vertex == null)
-            return;
-        vertex.setCount(vertex.getCount() + 1);
-        if (vertex.getRightElement().getCount() < vertex.getLeftElement().getCount()) {
-            Vertex helper = vertex.getLeftElement();
-            vertex.setLeftElement(vertex.getRightElement());
-            vertex.setRightElement(helper);
+    private void swapInUpperElement(Vertex current, Vertex newUpper, Vertex newElement) {
+        if (current.equals(newUpper.getLeftElement())) {
+            newUpper.setLeftElement(newElement);
+        } else {
+            newUpper.setRightElement(newElement);
         }
-        updateTree(vertex.getUpperElement());
+    }
+
+    private void swap(Vertex current, Vertex newMin) {
+        if (current == null || newMin == null)
+            return;
+        Vertex minUpper = current.getUpperElement();
+        Vertex newUpper = newMin.getUpperElement();
+        current.setUpperElement(newUpper);
+        newMin.setUpperElement(minUpper);
+
+        int levelHelper = newMin.getLevel();
+        newMin.setLevel(current.getLevel());
+        current.setLevel(levelHelper);
+
+        swapInUpperElement(current, minUpper, newMin);
+        swapInUpperElement(newMin, newUpper, current);
+    }
+
+    private Vertex getNext(Vertex current) {
+        return elements.stream().filter(element -> element.getCount() < current.getCount() && element.getLevel() < current.getLevel())
+                .max(comparator).orElse(null);
+    }
+
+    private void updateTree(Vertex vertex) {
+        Vertex correct = this.getNext(vertex);
+        if (correct != null && correct.getLevel()>0) {
+            swap(vertex, correct);
+        }
+
+        Vertex upper = vertex.getUpperElement();
+        if(upper!= null){
+            swapVertically(upper);
+            upper.setCount(upper.getLeftElement().getCount()+upper.getRightElement().getCount());
+            this.updateTree(upper);
+        }
+    }
+
+    private void swapVertically(Vertex upper){
+        if(upper.getRightElement().getCount()<upper.getLeftElement().getCount()){
+            swap(upper.getRightElement(), upper.getLeftElement());
+        }
     }
 
     public Vertex getRoot() {
-        Vertex vertex = elements.stream().filter(current -> current.getCount() == 0).findFirst().get();
-        while (vertex.getUpperElement() != null) {
-            vertex = vertex.getUpperElement();
-        }
-        return vertex;
+        return elements.stream().filter(element -> !(element instanceof Leaf)).max(comparator).orElse(null);
     }
 
-    public void calculateCodes(Vertex vertex, String code, int count, int min, int max, Object parentVertex){
-        if(vertex == null)
+    public void calculateCodes(Vertex vertex, String code, int count, int min, int max, Object parentVertex) {
+        if (vertex == null)
             return;
-        int y = (vertex.getUpperElement()!=null)?vertex.getUpperElement().getPoint().y:0;
-        vertex.setPoint(new Point((min+max/2),y+100));
+        int y = (vertex.getUpperElement() != null) ? vertex.getUpperElement().getPoint().y : 0;
+        vertex.setPoint(new Point((min + max / 2), y + 100));
         vertex.setCode(code);
         Object parent = this.panel.addVertex(vertex, parentVertex);
-        if (vertex instanceof Leaf && vertex.getCount()>0) {
+        if (vertex instanceof Leaf && vertex.getCount() > 0) {
             Leaf leaf = (Leaf) vertex;
-            double probability = (leaf.getCount()*1.0)/(count);
+            double probability = (leaf.getCount() * 1.0) / (count);
             leaf.setProbability(probability);
-            this.setEntropy(this.getEntropy()+probability * Math.log(1/probability)/Math.log(2));
-            this.setAverage(this.getAverage()+probability* leaf.getCode().length());
+            this.setEntropy(this.getEntropy() + probability * Math.log(1 / probability) / Math.log(2));
+            this.setAverage(this.getAverage() + probability * leaf.getCode().length());
         } else {
-            calculateCodes(vertex.getRightElement(), vertex.getCode()+"1", count, (max+min)/2, max, parent);
-            calculateCodes(vertex.getLeftElement(), vertex.getCode()+"0", count, 0, (max+min)/2, parent);
+            calculateCodes(vertex.getRightElement(), vertex.getCode() + "1", count, (max + min) / 2, max, parent);
+            calculateCodes(vertex.getLeftElement(), vertex.getCode() + "0", count, 0, (max + min) / 2, parent);
         }
     }
 }

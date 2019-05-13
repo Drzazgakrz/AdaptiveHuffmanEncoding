@@ -11,10 +11,6 @@ public class Leaf extends Vertex{
         return sign;
     }
 
-    public void setSign(String sign) {
-        this.sign = sign;
-    }
-
     public Leaf(String sign) {
         super();
         this.sign = sign;
@@ -35,6 +31,6 @@ public class Leaf extends Vertex{
 
     @Override
     public String toString(){
-        return (" ".equals(sign)?"space":sign)+":"+this.code;
+        return (" ".equals(sign)?"space":sign)+":"+this.code+":"+this.getCount();
     }
 }

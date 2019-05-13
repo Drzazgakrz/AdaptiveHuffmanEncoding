@@ -1,7 +1,6 @@
 package pl.krzysztof.drzazga.view;
 
 import com.mxgraph.view.mxGraph;
-import pl.krzysztof.drzazga.model.Leaf;
 import pl.krzysztof.drzazga.model.Vertex;
 
 import javax.swing.*;
@@ -20,7 +19,6 @@ public class TreePanel extends JPanel {
         Object currentVertex = graph.insertVertex(parent, label, vertex, vertex.getPoint().getX(),
                 vertex.getPoint().getY(), label.length()*7,15);
         graph.insertEdge(parent, "", vertex.getCode(),currentVertex, parentVertex);
-
         return currentVertex;
     }
 

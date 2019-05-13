@@ -2,6 +2,7 @@ package pl.krzysztof.drzazga.view;
 
 import com.mxgraph.swing.mxGraphComponent;
 import com.mxgraph.view.mxGraph;
+import pl.krzysztof.drzazga.model.Leaf;
 import pl.krzysztof.drzazga.service.ManageDataService;
 import pl.krzysztof.drzazga.model.Vertex;
 import javax.swing.*;
@@ -11,6 +12,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 
 public class Frame extends JFrame {
     private JTextArea textArea;
@@ -23,46 +25,57 @@ public class Frame extends JFrame {
 
     public Frame() {
         BoxLayout frameLayout = new BoxLayout(this.getContentPane(), BoxLayout.X_AXIS);
-        JPanel leftPanel = new JPanel();
-        BoxLayout leftLayout = new BoxLayout(leftPanel, BoxLayout.Y_AXIS);
-        leftPanel.setLayout(leftLayout);
         this.setLayout(frameLayout);
-        leftPanel.add(this.prepareTextArea());
-        Button button = new Button("Wyczyść");
-        button.addActionListener(new OnClickHandler());
-        leftPanel.add(createStatisticsArea());
-        leftPanel.add(button);
+        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
         this.service = new ManageDataService();
-        graphPanel = new JPanel();
-        BoxLayout layout = new BoxLayout(this.graphPanel, BoxLayout.Y_AXIS);
-        graphPanel.setLayout(layout);
-        addText();
-        this.add(leftPanel);
+        this.prepareLeftPanel(dimension);
+        this.prepareGraphPanel(dimension);
+        this.addText();
         this.add(graphPanel);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.pack();
         this.setVisible(true);
     }
 
-    public JPanel prepareTextArea() {
+    private void prepareLeftPanel(Dimension dimension){
+        JPanel leftPanel = new JPanel();
+        BoxLayout leftLayout = new BoxLayout(leftPanel, BoxLayout.Y_AXIS);
+        leftPanel.setLayout(leftLayout);
+
+        leftPanel.add(this.prepareTextArea());
+        Button button = new Button("Wyczyść");
+        button.addActionListener(new OnClickHandler());
+        leftPanel.add(createStatisticsArea());
+        leftPanel.add(button);
+        leftPanel.setSize((int)dimension.getWidth()/2, (int)dimension.getHeight() );
+        this.add(leftPanel);
+    }
+
+    private void prepareGraphPanel(Dimension dimension){
+        graphPanel = new JPanel();
+        graphPanel.setSize((int)dimension.getWidth()*2/3, (int)dimension.getHeight() );
+        BoxLayout layout = new BoxLayout(this.graphPanel, BoxLayout.Y_AXIS);
+        graphPanel.setLayout(layout);
+    }
+
+    private JPanel prepareTextArea() {
         JPanel areasPanel = new JPanel();
         BoxLayout layout = new BoxLayout(areasPanel, BoxLayout.Y_AXIS);
         areasPanel.setLayout(layout);
-        this.textArea = new JTextArea(15, 75);
+        this.textArea = new JTextArea(15, 50);
         textArea.addKeyListener(new KeyListener());
         prepareTextComponent(textArea, "Podaj wyrażenie do zakodowania", areasPanel, true);
-        this.binary = new JTextArea(15, 75);
+        this.binary = new JTextArea(15, 50);
         prepareTextComponent(binary, "Zakodowane wyrażenie", areasPanel, false);
         return areasPanel;
     }
 
-    public void addText(){
+    private void addText(){
         String text = "She sells seashells by the seashore," +
                 "The shells she sells are seashells, I'm sure" +
                 "So if she sells seashells on the seashore," +
                 "Then I'm sure she sells seashore shells.";
         this.textArea.setText(text);
-        System.out.println();
         for(int i = 0; i<text.length();i++){
             this.service.addLetter(text.charAt(i));
         }
@@ -88,7 +101,7 @@ public class Frame extends JFrame {
         }
     }
 
-    public JPanel createStatisticsArea() {
+    private JPanel createStatisticsArea() {
         JPanel statisticsArea = new JPanel();
         BoxLayout layout = new BoxLayout(statisticsArea, BoxLayout.X_AXIS);
         statisticsArea.setLayout(layout);
@@ -102,7 +115,7 @@ public class Frame extends JFrame {
         return statisticsArea;
     }
 
-    public JPanel prepareGeneralInfoPanel() {
+    private JPanel prepareGeneralInfoPanel() {
         JPanel generalInfoPanel = new JPanel();
         BoxLayout layout = new BoxLayout(generalInfoPanel, BoxLayout.Y_AXIS);
         generalInfoPanel.setLayout(layout);
@@ -113,7 +126,7 @@ public class Frame extends JFrame {
         return generalInfoPanel;
     }
 
-    public void prepareTextComponent(JTextComponent field, String label, JPanel target, Boolean editable) {
+    private void prepareTextComponent(JTextComponent field, String label, JPanel target, Boolean editable) {
         JLabel componentLabel = new JLabel(label);
         target.add(componentLabel);
         field.setEditable(editable);
@@ -132,7 +145,7 @@ public class Frame extends JFrame {
         }
     }
 
-    public void reinitializeFields(){
+    private void reinitializeFields(){
         this.service.getPanel().setGraph(new mxGraph());
         graphPanel.removeAll();
         this.service.setEntropy(0.0);
@@ -140,19 +153,22 @@ public class Frame extends JFrame {
         codesPanel.removeAll();
     }
 
-    public void displayTree(){
+    private void displayTree(){
         this.graphPanel.removeAll();
         mxGraph graph = this.service.getPanel().getGraph();
         this.graphPanel.add(new mxGraphComponent(graph));
     }
 
     public void displayCodes(Vertex vertex, String code) {
-        this.service.calculateCodes(vertex, code, this.textArea.getText().length(), 0,500,null);
+        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+        this.service.calculateCodes(vertex, code, this.textArea.getText().length(), 0,(int)dimension.getWidth()*2/3,null);
         this.service.getElements().forEach(leaf -> {
-            if(leaf.getSign()!= null ) {
-                JLabel label = new JLabel( leaf.toString() );
-                this.codesPanel.add(label);
-            }
+            try {
+                if (((Leaf) leaf).getSign() != null) {
+                    JLabel label = new JLabel(leaf.toString());
+                    this.codesPanel.add(label);
+                }
+            }catch (Exception e){}
         });
         displayTree();
     }

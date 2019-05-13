@@ -4,13 +4,14 @@ import java.awt.*;
 import java.io.Serializable;
 
 public class Vertex implements Comparable<Vertex>, Serializable {
-    protected Vertex leftElement;
-    protected Vertex rightElement;
+    private Vertex leftElement;
+    private Vertex rightElement;
     protected Point point;
     protected int count;
     protected Vertex upperElement;
     protected double probability;
     protected String code;
+    protected int level;
 
     public Point getPoint() {
         return point;
@@ -42,6 +43,7 @@ public class Vertex implements Comparable<Vertex>, Serializable {
 
     public void setLeftElement(Vertex leftElement) {
         this.leftElement = leftElement;
+        //setCurrentCount();
     }
 
     public Vertex getRightElement() {
@@ -50,7 +52,19 @@ public class Vertex implements Comparable<Vertex>, Serializable {
 
     public void setRightElement(Vertex rightElement) {
         this.rightElement = rightElement;
+        //setCurrentCount();
     }
+    /*public void setCurrentCount() {
+        int count1 = this.getRightElement() == null ? 0 : this.getRightElement().getCount();
+        int count2 = this.getLeftElement() == null ? 0 : this.getLeftElement().getCount();
+        int sum = count1 + count2;
+        if (sum != count)
+            this.count = sum;
+        else return;
+        if (upperElement != null) {
+            upperElement.setCurrentCount();
+        }
+    }*/
 
     public double getProbability() {
         return probability;
@@ -73,13 +87,21 @@ public class Vertex implements Comparable<Vertex>, Serializable {
         return Double.compare(this.getCount(), o.getCount());
     }
 
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
     public Vertex() {
-        this.code="";
+        this.code = "";
         this.count = 1;
     }
 
     @Override
-    public String toString(){
-        return this.code;
+    public String toString() {
+        return this.code + ":" + this.getCount();
     }
 }
